@@ -1,5 +1,7 @@
 # TemporaryKeyboardSwitcher
 
+![Demo](demo.gif)
+
 ---
 
 ## 🇬🇧 English
