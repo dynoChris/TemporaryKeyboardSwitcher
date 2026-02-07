@@ -109,6 +109,12 @@ public class TrayApp : ApplicationContext
         { Keys.Oemtilde, "ґ" },
     };
 
+    // Keys that change to a different symbol with Shift (not affected by Caps Lock)
+    private static readonly Dictionary<Keys, string> MapUaShiftOverride = new()
+    {
+        { Keys.OemQuestion, "," },
+    };
+
     public TrayApp()
     {
         // Tray menu
@@ -224,7 +230,11 @@ public class TrayApp : ApplicationContext
                     bool caps = (GetKeyState(VK_CAPITAL) & 0x0001) != 0;
                     bool upper = shift ^ caps;
 
-                    string text = upper ? ToUpperUa(lower) : lower;
+                    string text;
+                    if (shift && MapUaShiftOverride.TryGetValue(vk, out var shiftText))
+                        text = shiftText;
+                    else
+                        text = upper ? ToUpperUa(lower) : lower;
 
                     bool ok = InjectStringToForeground(text);
                     if (ok) return (IntPtr)1; // suppress the physical key if we injected
