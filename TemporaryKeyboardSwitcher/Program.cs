@@ -53,6 +53,12 @@ public class TrayApp : ApplicationContext
     [DllImport("user32.dll")]
     private static extern IntPtr GetForegroundWindow();
 
+    [DllImport("user32.dll")]
+    private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetKeyboardLayout(uint idThread);
+
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern bool PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
 
@@ -202,6 +208,9 @@ public class TrayApp : ApplicationContext
     {
         if (nCode >= 0 && _overlayEnabled)
         {
+            if (!IsForegroundRussianLayout())
+                return CallNextHookEx(_hook, nCode, wParam, lParam);
+
             int msg = (int)wParam;
             bool isDown = msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN;
             bool isUp = msg == WM_KEYUP || msg == WM_SYSKEYUP;
@@ -246,6 +255,19 @@ public class TrayApp : ApplicationContext
 
     private static string ToUpperUa(string s) =>
         s.ToUpper(new System.Globalization.CultureInfo("uk-UA"));
+
+    private static bool IsForegroundRussianLayout()
+    {
+        var hWnd = GetForegroundWindow();
+        if (hWnd == IntPtr.Zero) return false;
+
+        uint tid = GetWindowThreadProcessId(hWnd, out _);
+        if (tid == 0) return false;
+
+        IntPtr hkl = GetKeyboardLayout(tid);
+        ushort langId = (ushort)((ulong)hkl & 0xFFFF);
+        return langId == 0x0419; // Russian (ru-RU)
+    }
 
     // Hidden message window for WM_HOTKEY
     private class MessageWindow : NativeWindow
